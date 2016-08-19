@@ -75,7 +75,7 @@ Example:
         tab1.add_column_def('longname1', 's1', 'm/s')
 
         # column definition having a unit and one dependency
-        tab1.add_column_def('longname2', 's2', 'N', ['s3'])
+        tab1.add_column_def('longname2', 's2', 'N', ['s1'])
 
         # column definition having no unit and two dependencies
         tab1.add_column_def('longname3', 's3', None, ['s1','s2'])
