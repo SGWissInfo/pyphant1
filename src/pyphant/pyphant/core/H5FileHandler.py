@@ -37,9 +37,12 @@ import tables
 from pyphant.core import DataContainer
 from pyphant.quantities import Quantity
 PhysicalQuantity = Quantity
+from pyphant import tables_version_handler
 import logging
 import os
+
 from pyphant.core import PyTablesPersister
+    
 from pyphant.core.DataContainer import IndexMarker
 from pyphant.core.Helpers import (utf82uc, emd52dict)
 _logger = logging.getLogger("pyphant")
@@ -74,14 +77,14 @@ class H5FileHandler(object):
         self.filename = filename
         self.mode = mode
         if mode == 'w':
-            tmphandle = tables.openFile(self.filename, 'w')
+            tmphandle = tables_version_handler.open_file(self.filename, 'w')
             tmphandle.close()
             self.mode = 'a'
         self.handle = None
 
     def __enter__(self):
         assert self.handle is None
-        self.handle = tables.openFile(self.filename, self.mode)
+        self.handle = tables_version_handler.open_file(self.filename, self.mode)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -97,7 +100,7 @@ class H5FileHandler(object):
         """
         dcHash, uriType = DataContainer.parseId(dcId)
         try:
-            resNode = self.handle.getNode("/results/result_" + dcHash)
+            resNode = self.handle.get_node("/results/result_" + dcHash)
         except (AttributeError, tables.NoSuchNodeError):
             raise AttributeError("Container %s not found in file %s."
                                  % (dcId, self.filename))
@@ -113,7 +116,7 @@ class H5FileHandler(object):
         resNode, uriType = self.getNodeAndTypeFromId(dcId)
         if uriType == u'field':
             try:
-                resNode._g_checkHasChild('dimensions')
+                resNode._g_check_has_child('dimensions')
             except tables.NoSuchNodeError:
                 return True
         return False
@@ -162,7 +165,7 @@ class H5FileHandler(object):
         """
         if dcId is None:
             summary = {}
-            for group in self.handle.walkGroups(where="/results"):
+            for group in self.handle.walk_groups(where="/results"):
                 currDcId = group._v_attrs.TITLE
                 if len(currDcId) > 0:
                     tmp = self.loadSummary(currDcId)
@@ -176,28 +179,28 @@ class H5FileHandler(object):
             summary = {}
             summary['id'] = dcId
             resNode, uriType = self.getNodeAndTypeFromId(dcId)
-            summary['longname'] = utf82uc(self.handle.getNodeAttr(resNode,
+            summary['longname'] = utf82uc(self.handle.get_node_attr(resNode,
                                                                   "longname"))
             summary['shortname'] = utf82uc(
-                self.handle.getNodeAttr(resNode, "shortname")
+                self.handle.get_node_attr(resNode, "shortname")
                 )
             summary.update(emd52dict(dcId))
             try:
                 summary['machine'] = utf82uc(
-                    self.handle.getNodeAttr(resNode, "machine")
+                    self.handle.get_node_attr(resNode, "machine")
                     )
                 summary['creator'] = utf82uc(
-                    self.handle.getNodeAttr(resNode, "creator")
+                    self.handle.get_node_attr(resNode, "creator")
                     )
             except:
                 pass  # machine, creator set by emd52dict(dcId) before
             attributes = {}
             if uriType == 'field':
                 for key in resNode.data._v_attrs._v_attrnamesuser:
-                    attributes[key] = self.handle.getNodeAttr(
+                    attributes[key] = self.handle.get_node_attr(
                         resNode.data, key
                         )
-                unit = eval(utf82uc(self.handle.getNodeAttr(resNode, "unit")))
+                unit = eval(utf82uc(self.handle.get_node_attr(resNode, "unit")))
                 summary['unit'] = unit
                 dimTable = resNode.dimensions
 
@@ -212,11 +215,11 @@ class H5FileHandler(object):
             elif uriType == 'sample':
                 for key in resNode._v_attrs._v_attrnamesuser:
                     if key not in PyTablesPersister._reservedAttributes:
-                        attributes[key] = self.handle.getNodeAttr(resNode, key)
+                        attributes[key] = self.handle.get_node_attr(resNode, key)
                 columns = []
-                for resId in self.handle.getNodeAttr(resNode, "columns"):
+                for resId in self.handle.get_node_attr(resNode, "columns"):
                     nodename = "/results/" + resId
-                    columnId = self.handle.getNodeAttr(nodename, "TITLE")
+                    columnId = self.handle.get_node_attr(nodename, "TITLE")
                     columns.append(columnId)
                 summary['columns'] = columns
             summary['attributes'] = attributes
@@ -237,15 +240,15 @@ class H5FileHandler(object):
         dcHash, uriType = DataContainer.parseId(result.id)
         resId = u"result_" + dcHash
         try:
-            resultGroup = self.handle.getNode("/results/" + resId)
+            resultGroup = self.handle.get_node("/results/" + resId)
         except tables.NoSuchNodeError:
             try:
-                resultGroup = self.handle.createGroup(
+                resultGroup = self.handle.create_group(
                     "/results", resId, result.id.encode("utf-8")
                     )
             except tables.NoSuchNodeError:
-                self.handle.createGroup('/', 'results')
-                resultGroup = self.handle.createGroup(
+                self.handle.create_group('/', 'results')
+                resultGroup = self.handle.create_group(
                     "/results", resId, result.id.encode("utf-8")
                     )
             if uriType == 'field':

@@ -40,11 +40,7 @@ from pyphant.core.KnowledgeManager import (KnowledgeManager,
 import pyphant.core.PyTablesPersister as ptp
 from pyphant.core.DataContainer import (FieldContainer, SampleContainer)
 import numpy as N
-#from tables import open_file
-#from tables.File import (create_group, walk_groups)
-
-#enable compatibility to both tables3.x and 2.x:
-from pyphant.tables_version_handler import (open_file, create_group, walk_groups)
+import tables
 import urllib
 import tempfile
 import os
@@ -62,7 +58,7 @@ class KnowledgeManagerTestCase(unittest.TestCase):
     def testGetLocalFile(self):
         h5fileid, h5name = tempfile.mkstemp(suffix='.h5',prefix='test-')
         os.close(h5fileid)
-        h5 = open_file(h5name,'w')
+        h5 = tables.open_file(h5name,'w')
         resultsGroup = h5.create_group("/", "results")
         ptp.saveResult(self._fc, h5)
         h5.close()
@@ -83,7 +79,7 @@ class KnowledgeManagerTestCase(unittest.TestCase):
         url = "http://" + host + remote_dir + "/knowledgemanager-http-test.h5"
         # Get remote file and load DataContainer
         filename, headers = urllib.urlretrieve(url)
-        h5 = open_file(filename, 'r')
+        h5 = tables.open_file(filename, 'r')
         for g in h5.walk_groups("/results"):
             if (len(g._v_attrs.TITLE)>0) \
                     and (r"\Psi" in g._v_attrs.shortname):

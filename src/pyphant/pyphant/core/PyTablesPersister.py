@@ -90,7 +90,7 @@ def saveExecutionOrder(h5, order):
     if 'executionOrder' in h5.root:
         executionOrderGroup = h5.root.executionOrder
     else:
-        executionOrderGroup = h5.createGroup('/', 'executionOrder')
+        executionOrderGroup = h5.create_group('/', 'executionOrder')
     import md5
     m = md5.new()
     m.update(str(sorted(order[0].items())))  # Call 'sorted' to
@@ -98,13 +98,13 @@ def saveExecutionOrder(h5, order):
                                              # of order[0]
     m.update(str(sorted(order[1])))
     name = "pre_" + m.hexdigest()
-    orderGroup = h5.createGroup(executionOrderGroup, name)
+    orderGroup = h5.create_group(executionOrderGroup, name)
 
     class InputDescription(tables.IsDescription):
         socket = StringCol(max(map(len, order[0].keys())))
         data = StringCol(max(map(len, order[0].values())))
 
-    input = h5.createTable(orderGroup, 'input', InputDescription, "Socket Map")
+    input = h5.create_table(orderGroup, 'input', InputDescription, "Socket Map")
     m = input.row
     for s, d in order[0].iteritems():
         m['socket'] = s
@@ -115,35 +115,35 @@ def saveExecutionOrder(h5, order):
 
 
 def saveRecipe(h5, recipe, saveResults=True):
-    recipeGroup = h5.createGroup("/", "recipe")
-    h5.createGroup("/", "results")
-    h5.setNodeAttr(recipeGroup, "Annotations", recipe._annotations)
+    recipeGroup = h5.create_group("/", "recipe")
+    h5.create_group("/", "results")
+    h5.set_node_attr(recipeGroup, "Annotations", recipe._annotations)
     workers = recipe.getWorkers()
     for worker in workers:
         saveWorker(h5, recipeGroup, worker, saveResults)
 
 
 def saveWorker(h5, recipeGroup, worker, saveResults=True):
-    workerGroup = h5.createGroup(recipeGroup, "worker_" + str(hash(worker)))
+    workerGroup = h5.create_group(recipeGroup, "worker_" + str(hash(worker)))
     saveBaseAttributes(h5, workerGroup, worker)
     savePlugs(h5, workerGroup, worker, saveResults)
     saveParameters(h5, workerGroup, worker)
 
 
 def saveParameters(h5, workerGroup, worker):
-    paramGroup = h5.createGroup(workerGroup, "parameters")
+    paramGroup = h5.create_group(workerGroup, "parameters")
     for (paramName, param) in worker._params.iteritems():
-        h5.setNodeAttr(paramGroup, paramName, param.value)
+        h5.set_node_attr(paramGroup, paramName, param.value)
 
 
 def savePlugs(h5, workerGroup, worker, saveResults=True):
-    plugs = h5.createGroup(workerGroup, "plugs")
+    plugs = h5.create_group(workerGroup, "plugs")
     for (plugName, plug) in worker._plugs.iteritems():
-        plugGroup = h5.createGroup(plugs, plugName)
+        plugGroup = h5.create_group(plugs, plugName)
         if plug.resultIsAvailable() and saveResults:
             resId = saveResult(plug._result, h5)
-            h5.setNodeAttr(plugGroup, "result", resId)
-        connectionTable = h5.createTable(
+            h5.set_node_attr(plugGroup, "result", resId)
+        connectionTable = h5.create_table(
             plugGroup, 'connections',
             Connection, expectedrows=len(plug._sockets)
             )
@@ -158,21 +158,21 @@ def savePlugs(h5, workerGroup, worker, saveResults=True):
 
 
 def saveBaseAttributes(h5, workerGroup, worker):
-    h5.setNodeAttr(workerGroup, "module", worker.__class__.__module__)
-    h5.setNodeAttr(workerGroup, "clazz", worker.__class__.__name__)
-    h5.setNodeAttr(workerGroup, "WorkerAPIVersion", worker.API)
-    h5.setNodeAttr(workerGroup, "WorkerVersion", worker.VERSION)
-    h5.setNodeAttr(workerGroup, "WorkerRevision", worker.REVISION)
-    h5.setNodeAttr(workerGroup, "Annotations", worker._annotations)
+    h5.set_node_attr(workerGroup, "module", worker.__class__.__module__)
+    h5.set_node_attr(workerGroup, "clazz", worker.__class__.__name__)
+    h5.set_node_attr(workerGroup, "WorkerAPIVersion", worker.API)
+    h5.set_node_attr(workerGroup, "WorkerVersion", worker.VERSION)
+    h5.set_node_attr(workerGroup, "WorkerRevision", worker.REVISION)
+    h5.set_node_attr(workerGroup, "Annotations", worker._annotations)
 
 
 def saveResult(result, h5):
     hash, uriType = DataContainer.parseId(result.id)
     resId = u"result_" + hash
     try:
-        resultGroup = h5.getNode("/results/" + resId)
+        resultGroup = h5.get_node("/results/" + resId)
     except tables.NoSuchNodeError:
-        resultGroup = h5.createGroup(
+        resultGroup = h5.create_group(
             "/results", resId, result.id.encode("utf-8")
             )
         if uriType == 'field':
@@ -189,21 +189,21 @@ def saveResult(result, h5):
 
 
 def saveSample(h5, resultGroup, result):
-    h5.setNodeAttr(resultGroup, "longname", result.longname.encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "shortname", result.shortname.encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "creator", result.creator.encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "machine", result.machine.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "longname", result.longname.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "shortname", result.shortname.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "creator", result.creator.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "machine", result.machine.encode("utf-8"))
     for key, value in result.attributes.iteritems():
         if key in _reservedAttributes:
             raise ValueError("Attributes should not be named %s, "
                              "but one was in fact called %s!"
                              % (str(_reservedAttributes), key))
-        h5.setNodeAttr(resultGroup, key, value)
+        h5.set_node_attr(resultGroup, key, value)
     #Store fields of sample Container and gather list of field IDs
     columns = []
     for column in result.columns:
         columns.append(saveResult(column, h5))
-    h5.setNodeAttr(resultGroup, "columns", columns)
+    h5.set_node_attr(resultGroup, "columns", columns)
 
 
 def saveField(h5, resultGroup, result):
@@ -219,30 +219,30 @@ def saveField(h5, resultGroup, result):
             return map(dump, inputList)
     if result.data.dtype.char in ['U', 'O']:
         unicodeData = scipy.array(dump(result.data.tolist()))
-        h5.createArray(
+        h5.create_array(
             resultGroup, "data", unicodeData, result.longname.encode("utf-8")
             )
     else:
-        h5.createArray(
+        h5.create_array(
             resultGroup, "data", result.data, result.longname.encode("utf-8")
             )
     for key, value in result.attributes.iteritems():
-        h5.setNodeAttr(resultGroup.data, key, value)
-    h5.setNodeAttr(resultGroup, "longname", result.longname.encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "shortname", result.shortname.encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "creator", result.creator.encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "machine", result.machine.encode("utf-8"))
+        h5.set_node_attr(resultGroup.data, key, value)
+    h5.set_node_attr(resultGroup, "longname", result.longname.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "shortname", result.shortname.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "creator", result.creator.encode("utf-8"))
+    h5.set_node_attr(resultGroup, "machine", result.machine.encode("utf-8"))
 
     if result.error != None:
-        h5.createArray(resultGroup, "error", result.error,
+        h5.create_array(resultGroup, "error", result.error,
                        (u"Error of " + result.longname).encode("utf-8"))
     if result.mask != None:
-        h5.createArray(resultGroup, "mask", result.mask,
+        h5.create_array(resultGroup, "mask", result.mask,
                        (u"Mask of " + result.longname).encode("utf-8"))
-    h5.setNodeAttr(resultGroup, "unit", repr(result.unit).encode("utf-8"))
+    h5.set_node_attr(resultGroup, "unit", repr(result.unit).encode("utf-8"))
     if result.dimensions != DataContainer.INDEX:
         idLen = max([len(dim.id.encode("utf-8")) for dim in result.dimensions])
-        dimTable = h5.createTable(
+        dimTable = h5.create_table(
             resultGroup, "dimensions",
             {"hash": StringCol(32), "id": StringCol(idLen)},
             (u"Dimensions of " + result.longname).encode("utf-8"),
@@ -348,7 +348,7 @@ def restoreResultsToWorkers(recipeGroup, workers, h5):
             plug = workers[workerGroup._v_name].getPlug(plugGroup._v_name)
             try:
                 resId = plugGroup._v_attrs.result
-                resNode = h5.getNode("/results/" + resId)
+                resNode = h5.get_node("/results/" + resId)
                 hash, uriType = DataContainer.parseId(resNode._v_title)
                 if uriType == u'field':
                     result = loadField(h5, resNode)
@@ -368,11 +368,11 @@ def restoreResultsToWorkers(recipeGroup, workers, h5):
 
 
 def loadField(h5, resNode):
-    longname = unicode(h5.getNodeAttr(resNode, "longname"), 'utf-8')
-    shortname = unicode(h5.getNodeAttr(resNode, "shortname"), 'utf-8')
+    longname = unicode(h5.get_node_attr(resNode, "longname"), 'utf-8')
+    shortname = unicode(h5.get_node_attr(resNode, "shortname"), 'utf-8')
     try:
-        creator = unicode(h5.getNodeAttr(resNode, "creator"), 'utf-8')
-        machine = unicode(h5.getNodeAttr(resNode, "machine"), 'utf-8')
+        creator = unicode(h5.get_node_attr(resNode, "creator"), 'utf-8')
+        machine = unicode(h5.get_node_attr(resNode, "machine"), 'utf-8')
     except:
         from pyphant.core.Helpers import emd52dict
         emd5dict = emd52dict(resNode._v_title)
@@ -392,7 +392,7 @@ def loadField(h5, resNode):
         data = scipy.array(loads(data.tolist()))
     attributes = {}
     for key in resNode.data._v_attrs._v_attrnamesuser:
-        attributes[key] = h5.getNodeAttr(resNode.data, key)
+        attributes[key] = h5.get_node_attr(resNode.data, key)
     try:
         error = scipy.array(resNode.error.read())
     except tables.NoSuchNodeError:
@@ -401,13 +401,13 @@ def loadField(h5, resNode):
         mask = scipy.array(resNode.mask.read())
     except tables.NoSuchNodeError:
         mask = None
-    unit = eval(unicode(h5.getNodeAttr(resNode, "unit"), 'utf-8'))
+    unit = eval(unicode(h5.get_node_attr(resNode, "unit"), 'utf-8'))
     try:
         dimTable = resNode.dimensions
         dimensions = [
             loadField(
                 h5,
-                h5.getNode(
+                h5.get_node(
                     "/results/result_" + DataContainer.parseId(row['id'])[0]
                     )
                 )
@@ -428,19 +428,19 @@ def loadSample(h5, resNode):
     result = DataContainer.SampleContainer.__new__(
         DataContainer.SampleContainer
         )
-    result.longname = unicode(h5.getNodeAttr(resNode, "longname"), 'utf-8')
-    result.shortname = unicode(h5.getNodeAttr(resNode, "shortname"), 'utf-8')
-    result.creator = unicode(h5.getNodeAttr(resNode, "creator"), 'utf-8')
-    result.machine = unicode(h5.getNodeAttr(resNode, "machine"), 'utf-8')
+    result.longname = unicode(h5.get_node_attr(resNode, "longname"), 'utf-8')
+    result.shortname = unicode(h5.get_node_attr(resNode, "shortname"), 'utf-8')
+    result.creator = unicode(h5.get_node_attr(resNode, "creator"), 'utf-8')
+    result.machine = unicode(h5.get_node_attr(resNode, "machine"), 'utf-8')
     result.attributes = {}
     for key in resNode._v_attrs._v_attrnamesuser:
         if key not in _reservedAttributes:
-            result.attributes[key] = h5.getNodeAttr(resNode, key)
+            result.attributes[key] = h5.get_node_attr(resNode, key)
     columns = []
-    for resId in h5.getNodeAttr(resNode, "columns"):
+    for resId in h5.get_node_attr(resNode, "columns"):
         nodename = "/results/" + resId
         hash, uriType = DataContainer.parseId(
-            h5.getNodeAttr(nodename, "TITLE")
+            h5.get_node_attr(nodename, "TITLE")
             )
         if uriType == 'sample':
             loader = loadSample
@@ -452,7 +452,7 @@ def loadSample(h5, resNode):
                     uriType, result.id
                     )
                 )
-        columns.append(loader(h5, h5.getNode(nodename)))
+        columns.append(loader(h5, h5.get_node(nodename)))
     result.columns = columns
     result.seal(resNode._v_title)
     return result
@@ -471,5 +471,5 @@ def loadExecutionOrders(h5):
 
 
 def pruneResults(h5):
-    h5.removeNode("/results", recursive=True)
-    h5.createGroup("/", "results")
+    h5.remove_node("/results", recursive=True)
+    h5.create_group("/", "results")
