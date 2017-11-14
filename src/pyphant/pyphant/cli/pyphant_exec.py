@@ -42,8 +42,14 @@ def main():
     import os.path
     km.registerURL("file://" + os.path.realpath(filename))
     import tables
-    h5 = tables.openFile(filename, 'r+')
-    from pyphant.core import PyTablesPersister
+    h5 = tables.open_file(filename, 'r+')
+
+    from pyphant.VersionConfig import ptversion
+    if ptversion[0] == "3":
+        from pyphant.core import PyTablesPersisterpt3
+    else:
+        from pyphant.core import PyTablesPersister
+        
     recipe = PyTablesPersister.loadRecipe(h5)
     executionOrders = PyTablesPersister.loadExecutionOrders(h5)
     h5.close()
@@ -63,7 +69,7 @@ def main():
         plug = getattr(d, pSpec[1])
         res = plug.getResult()
         res.seal()
-        h5 = tables.openFile(filename, 'r+')
+        h5 = tables.open_file(filename, 'r+')
         PyTablesPersister.saveResult(res, h5)
         h5.close()
 

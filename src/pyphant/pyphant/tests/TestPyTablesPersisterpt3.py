@@ -44,11 +44,7 @@ from pyphant.core.PyTablesPersister import (saveField, loadField, saveSample,
                                             loadSample, saveExecutionOrder,
                                             loadExecutionOrders)
 import numpy
-#from tables import open_file
-#from tables.File import create_group
-
-#enable compatibility to both tables3.x and 2.x:
-from pyphant.tables_version_handler import (open_file, create_group)
+import tables
 
 class ContainerTestCase(unittest.TestCase):
     def setUp(self):
@@ -62,7 +58,7 @@ class ContainerTestCase(unittest.TestCase):
             'version': 'dummy version',
             'unit': self.unit
             }
-        self.eln = open_file('FieldContainerTestCase.h5','w',
+        self.eln = tables.open_file('FieldContainerTestCase.h5','w',
                                    title='Testing the saving and restoring of FieldContainers.')
         self.eln.create_group(self.eln.root,'results')
         self.field = FieldContainer(self.testData,longname=self.longname,
@@ -179,12 +175,12 @@ class ExecutionOrderTestCase(unittest.TestCase):
                        ({'sockA' : 'emd5://quux', 'sockB' : 'emd5://froz'}, 'pink')]
 
     def testSaveAndLoad(self):
-        h5 = open_file(self.path, mode='w')
+        h5 = tables.open_file(self.path, mode='w')
         for order in self.orders:
             saveExecutionOrder(h5, order)
         h5.close()
 
-        h5 = open_file(self.path)
+        h5 = tables.open_file(self.path)
         orders = loadExecutionOrders(h5)
         h5.close()
         self.assertEquals(sorted(orders), sorted(self.orders))

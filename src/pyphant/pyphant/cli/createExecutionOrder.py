@@ -31,8 +31,18 @@ import pkg_resources
 pkg_resources.require('pyphant')
 pkg_resources.require('pyphant.imageprocessing')
 pkg_resources.require('tables')
-from pyphant.core import PyTablesPersister
-from pyphant.core.H5FileHandler import H5FileHandler
+
+from pyphant.VersionConfig import ptversion
+if ptversion[0] == "3":
+    from pyphant.core import PyTablesPersisterpt3
+else:
+    from pyphant.core import PyTablesPersister
+
+if ptversion[0] == "3":
+    from pyphant.core.H5FileHandlerpt3 import H5FileHandler
+else:
+    from pyphant.core.H5FileHandler import H5FileHandler
+    
 from ImageProcessing.ImageLoaderWorker import ImageLoaderWorker
 from pyphant.core.KnowledgeManager import KnowledgeManager
 import glob
@@ -124,7 +134,7 @@ def globOrder(order, h5):
 def main():
     km = KnowledgeManager.getInstance()
     sourcefile = sys.argv[1]
-    h5 = tables.openFile(sourcefile, 'r+')
+    h5 = tables.open_file(sourcefile, 'r+')
     options, args, recipe, orders = processArgs(h5)
     h5.close()
     import os.path
@@ -165,7 +175,7 @@ def main():
         filename = os.path.basename(sourcefile)[:-3] + '_%i.h5' % (i, )
         with H5FileHandler(filename, 'w') as handler:
             handler.saveRecipe(recipe)
-        h5 = tables.openFile(filename, 'r+')
+        h5 = tables.open_file(filename, 'r+')
         for o in orderList:
             PyTablesPersister.saveExecutionOrder(h5, o)
             for data in o[0].values():
